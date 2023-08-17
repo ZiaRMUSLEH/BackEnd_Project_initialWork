@@ -20,7 +20,7 @@ public class ContactMessageMapper {
         contactMessageResponse.setEmail(contactMessage.getEmail());
         contactMessageResponse.setSubject(contactMessage.getSubject());
         contactMessageResponse.setMessage(contactMessage.getMessage());
-        String date = String.valueOf(contactMessage.getCreationDate()).replaceAll("[A-Z]"," ").substring(0,16);
+        String date = String.valueOf(contactMessage.getCreationDate()).substring(0,16);
         contactMessageResponse.setCreationDate(date);
         return contactMessageResponse;
     }
@@ -33,19 +33,6 @@ public class ContactMessageMapper {
         contactMessage.setMessage(contactMessageRequest.getMessage());
         return contactMessage;
     }
-
-    public ContactMessageRequest contactMessageTocontactMessageRequest(ContactMessage contactMessage){
-        ContactMessageRequest contactMessageRequest = new ContactMessageRequest();
-        contactMessageRequest.setName(contactMessage.getName());
-        contactMessageRequest.setEmail(contactMessage.getEmail());
-        contactMessageRequest.setSubject(contactMessage.getSubject());
-        contactMessageRequest.setMessage(contactMessage.getMessage());
-        return contactMessageRequest;
-    }
-
-
-
-
 
 
     public Page<ContactMessageResponse> contactMessagePageToContactMessageResponse(Page<ContactMessage> contactMessagePage) {
@@ -69,12 +56,23 @@ public class ContactMessageMapper {
     }
 
 
-    public ContactMessage contactMessageUpdateRequestToContactMessage(ContactMessageUpdateRequest contactMessageUpdateRequest){
-        ContactMessage contactMessage = new ContactMessage();
-        contactMessage.setName(contactMessageUpdateRequest.getName());
-        contactMessage.setEmail(contactMessageUpdateRequest.getEmail());
-        contactMessage.setSubject(contactMessageUpdateRequest.getSubject());
-        contactMessage.setMessage(contactMessageUpdateRequest.getMessage());
+    public ContactMessage contactMessageUpdateRequestToContactMessage(ContactMessage contactMessage, ContactMessageUpdateRequest contactMessageUpdateRequest){
+       if(contactMessageUpdateRequest.getName() !=null) {
+           contactMessage.setName(contactMessageUpdateRequest.getName());
+       }
+
+        if(contactMessageUpdateRequest.getEmail() !=null) {
+            contactMessage.setEmail(contactMessageUpdateRequest.getEmail());
+        }
+
+        if(contactMessageUpdateRequest.getSubject() !=null) {
+            contactMessage.setSubject(contactMessageUpdateRequest.getSubject());
+        }
+
+        if(contactMessageUpdateRequest.getMessage() !=null) {
+            contactMessage.setMessage(contactMessageUpdateRequest.getMessage());
+        }
+
         return contactMessage;
     }
 

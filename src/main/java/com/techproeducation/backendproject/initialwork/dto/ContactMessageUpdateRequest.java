@@ -13,20 +13,20 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ContactMessageUpdateRequest {
 
-    @NotNull(message = "Name cannot be null!")
+
     private String name;
 
 
-    @NotNull(message = "Email cannot be null!")
+   
     @Email(message = "please provide a valid email!")
     private String email;
 
 
-    @NotNull(message = "Subject cannot be null!")
+
     private String subject;
 
 
-    @NotNull(message = "Message cannot be null!")
+
     private String message;
 
 

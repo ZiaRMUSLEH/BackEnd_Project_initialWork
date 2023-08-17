@@ -14,14 +14,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ContactMessageService {
@@ -38,9 +36,9 @@ public class ContactMessageService {
     @Transactional
     public void createContactMessage (ContactMessageRequest contactMessageRequest) {
 
-        Optional<ContactMessage> existContactMessage = contactMessageRepository.findByEmail(contactMessageRequest.getEmail());
-        if(!existContactMessage.isEmpty()){
-            throw  new ConflictException("Contact Message Already Exists");
+        boolean isExist = contactMessageRepository.existsByEmail(contactMessageRequest.getEmail());
+        if(isExist){
+            throw  new ConflictException("Contact Message Already Exists.");
         }
         ContactMessage newContactMessage =  contactMessageMapper.contactMessageRequestToContactMessage(contactMessageRequest);
 
@@ -52,12 +50,12 @@ public class ContactMessageService {
     public List<ContactMessageResponse> getAll () {
         List<ContactMessage> contactMessages = contactMessageRepository.findAll();
         if(contactMessages.isEmpty()){
-            throw new ResourceNotFoundException("No Contact Messages found!");
+            throw new ResourceNotFoundException("No Contact Messages found.");
         }
         List<ContactMessageResponse> contactMessageResponseList = new ArrayList<>();
         for(ContactMessage contactMessage: contactMessages){
-            ContactMessageResponse contactMessageDTO = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
-            contactMessageResponseList.add(contactMessageDTO);
+            ContactMessageResponse contactMessageResponse = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
+            contactMessageResponseList.add(contactMessageResponse);
         }
         return contactMessageResponseList;
     }
@@ -69,7 +67,7 @@ public class ContactMessageService {
         Page<ContactMessage> contactMessagePage = contactMessageRepository.findAll(pageable);
 
         if(contactMessagePage.isEmpty()){
-            throw new ResourceNotFoundException("No Contact Messages found! ");
+            throw new ResourceNotFoundException("No Contact Messages found.");
         }
         Page<ContactMessageResponse> contactMessageResponses = contactMessageMapper.contactMessagePageToContactMessageResponse(contactMessagePage);
         return contactMessageResponses;
@@ -100,18 +98,25 @@ public class ContactMessageService {
 
     // get ContactMessage by email
 
-    public ContactMessageResponse getByEmail (String email) {
+    public List<ContactMessageResponse> getByEmail (String email) {
 
         if(email.isEmpty()){
-            throw new NullPointerException("Email is empty, please enter a valid Email.");
+            throw new NullPointerException("Email is empty, please enter a valid Email?");
         }
 
-        ContactMessage contactMessage = contactMessageRepository.findByEmail(email)
-                .orElseThrow(()-> new ResourceNotFoundException("No Contact Messages found by email: "+email));
+        List<ContactMessage> contactMessageList = contactMessageRepository.findByEmail(email);
+        if(contactMessageList.isEmpty()){
+            throw new ResourceNotFoundException("No Contact Messages found by email: "+email);
+        }
 
-        ContactMessageResponse contactMessageResponse = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
-        return contactMessageResponse;
+        List<ContactMessageResponse> contactMessageResponses = new ArrayList<>();
+        for(ContactMessage contactMessage: contactMessageList){
+            ContactMessageResponse contactMessageResponse = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
+            contactMessageResponses.add(contactMessageResponse);
+        }
+        return contactMessageResponses;
     }
+
 
 
     // get ContactMessage by Creation Date
@@ -131,10 +136,6 @@ public class ContactMessageService {
         Timestamp startDateTime = Timestamp.valueOf(startLocalDateTime);
         Timestamp endDateTime = Timestamp.valueOf(endLocalDateTime);
 
-
-
-
-
         List<ContactMessage> contactMessageList = contactMessageRepository.getByDate(startDateTime,endDateTime);
 
         if(contactMessageList.isEmpty()){
@@ -148,25 +149,35 @@ public class ContactMessageService {
         return contactMessageResponses;
     }
 
-//    // get ContactMessage by Creation Time
-//
-//    public List<ContactMessageResponse> getByTime (String startTime, String endTime) {
-//        if(subject.isEmpty()){
-//            throw new NullPointerException("Subject is empty, please enter a valid Subject.");
-//        }
-//
-//        List<ContactMessage> contactMessageList = contactMessageRepository.getBySubject(subject);
-//        if(contactMessageList.isEmpty()){
-//            throw new ResourceNotFoundException("No Contact Messages found by subject: "+subject);
-//        }
-//
-//        List<ContactMessageResponse> contactMessageResponses = new ArrayList<>();
-//        for(ContactMessage contactMessage: contactMessageList){
-//            ContactMessageResponse contactMessageResponse = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
-//            contactMessageResponses.add(contactMessageResponse);
-//        }
-//        return contactMessageResponses;
-//    }
+        // get ContactMessage by Creation Time
+
+        public List<ContactMessageResponse> getByTime (Integer startHour, Integer startMinute, Integer endHour, Integer endMinute) {
+
+            List<ContactMessage> contactMessageList = contactMessageRepository.findAll();
+
+            List<ContactMessageResponse> contactMessageResponses = new ArrayList<>();
+            for(ContactMessage contactMessage: contactMessageList){
+
+                int hour = contactMessage.getCreationDate().toLocalDateTime().getHour();
+                int minute = contactMessage.getCreationDate().toLocalDateTime().getMinute();
+
+                LocalTime contactMessageTime = LocalTime.of(hour,minute);
+
+                LocalTime startTime = LocalTime.of(startHour,startMinute,0);
+                LocalTime endTime = LocalTime.of(endHour,endMinute,59);
+
+
+
+                if ((contactMessageTime.isAfter(startTime)||contactMessageTime.equals(startTime)) && (contactMessageTime.isBefore(endTime) || contactMessageTime.equals(endTime))){
+                    ContactMessageResponse contactMessageResponse = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
+                    contactMessageResponses.add(contactMessageResponse);}
+
+            }
+            if(contactMessageResponses.isEmpty()){
+                throw new ResourceNotFoundException("No Contact Messages found between: "+startHour+":"+startMinute+" and "+endHour+":"+endMinute);
+            }
+            return contactMessageResponses;
+    }
 
 
     // delete by ID (path)
@@ -197,27 +208,29 @@ public class ContactMessageService {
     @Transactional
     public void update (Long id, ContactMessageUpdateRequest contactMessageUpdateRequest) {
 
-        if(id==null){
-            throw new NullPointerException("Id is empty: "+id+" please enter a valid Id.");
-        }
-
         ContactMessage existContactMessage = contactMessageRepository.findById(id)
                 .orElseThrow(()->new ResourceNotFoundException("No Contact Messages found by id: "+id));
-
+//
+//        boolean isEmailExist = contactMessageRepository.existsByEmail(contactMessageUpdateRequest.getEmail());
+//
+//        if(isEmailExist && !existContactMessage.getEmail().equals(contactMessageUpdateRequest.getEmail())){
+//            throw new ConflictException("Contact Message with email:   "+contactMessageUpdateRequest.getEmail()+"  already exists.");
+//        }
         boolean isEmailExist = contactMessageRepository.existsByEmail(contactMessageUpdateRequest.getEmail());
 
-        if(isEmailExist && !existContactMessage.getEmail().equals(contactMessageUpdateRequest.getEmail())){
-            throw new ConflictException("Contact Message with email:   "+contactMessageUpdateRequest.getEmail()+"  already exists");
+        if(contactMessageUpdateRequest.getEmail()!=null){
+            if(isEmailExist && !existContactMessage.getEmail().equals(contactMessageUpdateRequest.getEmail())){
+                throw new ConflictException("Contact Message with email:   "+contactMessageUpdateRequest.getEmail()+"  already exists.");
+            }
         }
 
-        existContactMessage.setName(contactMessageUpdateRequest.getName());
-        existContactMessage.setMessage(contactMessageUpdateRequest.getMessage());
-        existContactMessage.setSubject(contactMessageUpdateRequest.getSubject());
-        existContactMessage.setEmail(contactMessageUpdateRequest.getEmail());
+
+
+
+
+        existContactMessage = contactMessageMapper.contactMessageUpdateRequestToContactMessage(existContactMessage,contactMessageUpdateRequest);
         contactMessageRepository.save(existContactMessage);
 
     }
-
-
 
 }

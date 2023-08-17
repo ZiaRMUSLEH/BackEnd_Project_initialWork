@@ -3,6 +3,7 @@ package com.techproeducation.backendproject.initialwork.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 
@@ -43,6 +44,8 @@ public class ContactMessage {
 
     @Column(nullable = false)
     private Timestamp creationDate = Timestamp.valueOf(LocalDateTime.now(ZoneId.of("America/New_York")));
+
+
 
 
 

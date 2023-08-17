@@ -32,10 +32,12 @@ public class ContactMessageController {
     public ResponseEntity<Map<String ,String >> createContactMessage(@Valid @RequestBody ContactMessageRequest contactMessageRequest){
         contactMessageService.createContactMessage(contactMessageRequest);
         Map<String,String> map= new HashMap<>();
-        map.put("message","Contact Message created successfully ..");
+        map.put("message","Contact Message created successfully.");
         map.put("status","true");
         return new ResponseEntity<>(map, HttpStatus.CREATED);
     }
+
+
 
     // get all ContactMessage
 
@@ -44,6 +46,8 @@ public class ContactMessageController {
         List <ContactMessageResponse> contactMessageResponses = contactMessageService.getAll();
         return new ResponseEntity<>(contactMessageResponses, HttpStatus.FOUND);
     }
+
+
 
     // get all ContactMessage by page
 
@@ -55,8 +59,10 @@ public class ContactMessageController {
         Pageable pageable = PageRequest.of(page,size,Sort.by(type,sort));
 
         Page<ContactMessageResponse> contactMessageResponses = contactMessageService.getAllWithPageable(pageable);
-        return ResponseEntity.ok(contactMessageResponses);
+        return new ResponseEntity<>(contactMessageResponses, HttpStatus.FOUND);
     }
+
+
 
     // search ContactMessage by subject
 
@@ -66,12 +72,14 @@ public class ContactMessageController {
         return new ResponseEntity<>(contactMessageResponses, HttpStatus.FOUND);
     }
 
+
+
     // get ContactMessage by email
 
     @GetMapping("/email") //http://localhost:8080/contactMessages/email?email=
-    public ResponseEntity<ContactMessageResponse> getByEmail (@RequestParam String email){
-        ContactMessageResponse contactMessageResponse = contactMessageService.getByEmail(email);
-        return new ResponseEntity<>(contactMessageResponse, HttpStatus.FOUND);
+    public ResponseEntity<List<ContactMessageResponse>> getByEmail (@RequestParam String email){
+        List<ContactMessageResponse> contactMessageResponses = contactMessageService.getByEmail(email);
+        return new ResponseEntity<>(contactMessageResponses, HttpStatus.FOUND);
     }
 
 
@@ -98,19 +106,24 @@ public class ContactMessageController {
 
     // get ContactMessage by Creation Time
 
-//    @GetMapping("/startTime/{startTime}/endTime/{endTime}") //http://localhost:8080/contactMessages/startTime/{startTime}/endTime/{endTime}
-//    public ResponseEntity<List<ContactMessageResponse>> getByTime (@PathVariable("startTime") String startTime,
-//                                                                   @PathVariable("endTime") String endTime) {
-//        List<ContactMessageResponse> contactMessageResponses = contactMessageService.getByTime(startTime, endTime);
-//        return new ResponseEntity<>(contactMessageResponses, HttpStatus.FOUND);
-//    }
+    @GetMapping("/getByTime")
+    //http://localhost:8080/contactMessages/getByTime?startHour=10&startMinute=30&endHour=22&endMinute=0
+    public ResponseEntity<List<ContactMessageResponse>> getByTime (@RequestParam("startHour") Integer startHour,
+                                                                   @RequestParam("startMinute") Integer startMinute,
+                                                                   @RequestParam("endHour") Integer endHour,
+                                                                   @RequestParam("endMinute") Integer endMinute
+    ) {
+        List<ContactMessageResponse> contactMessageResponses = contactMessageService
+                .getByTime(startHour,startMinute,endHour,endMinute);
+        return new ResponseEntity<>(contactMessageResponses, HttpStatus.FOUND);
+    }
 
     // delete by ID (path)
     @DeleteMapping("/{id}") //http://localhost:8080/contactMessages/{id}
     public ResponseEntity<Map<String , String >> deleteBYPath(@PathVariable Long id){
         contactMessageService.deleteByPath(id);
         Map<String , String > map = new HashMap<>();
-        map.put("message","Contact Message with id: "+id+" deleted successfully");
+        map.put("message","Contact Message with id: "+id+" deleted successfully.");
         map.put("status","true");
         return new ResponseEntity<>(map,HttpStatus.OK);
     }
@@ -121,7 +134,7 @@ public class ContactMessageController {
     public ResponseEntity<Map<String , String >> deleteByParameter(@RequestParam Long id) {
         contactMessageService.deleteByParameter(id);
         Map<String, String> map = new HashMap<>();
-        map.put("message", "Contact Message with id: " + id + " deleted successfully");
+        map.put("message", "Contact Message with id: " + id + " deleted successfully.");
         map.put("status", "true");
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
@@ -133,7 +146,7 @@ public class ContactMessageController {
                                                         @RequestBody ContactMessageUpdateRequest contactMessageUpdateRequest){
         contactMessageService.update(id, contactMessageUpdateRequest);
         Map<String, String> map = new HashMap<>();
-        map.put("message", "Contact Message with id: " + id + " updated successfully");
+        map.put("message", "Contact Message with id: " + id + " updated successfully.");
         map.put("status", "true");
         return new ResponseEntity<>(map, HttpStatus.OK);
     }
