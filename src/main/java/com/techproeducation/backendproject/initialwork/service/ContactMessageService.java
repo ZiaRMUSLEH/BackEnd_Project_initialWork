@@ -1,0 +1,223 @@
+package com.techproeducation.backendproject.initialwork.service;
+
+
+import com.techproeducation.backendproject.initialwork.dto.ContactMessageRequest;
+import com.techproeducation.backendproject.initialwork.dto.ContactMessageResponse;
+import com.techproeducation.backendproject.initialwork.dto.ContactMessageUpdateRequest;
+import com.techproeducation.backendproject.initialwork.entity.ContactMessage;
+import com.techproeducation.backendproject.initialwork.exceptions.ConflictException;
+import com.techproeducation.backendproject.initialwork.exceptions.ResourceNotFoundException;
+import com.techproeducation.backendproject.initialwork.mapper.ContactMessageMapper;
+import com.techproeducation.backendproject.initialwork.repository.ContactMessageRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class ContactMessageService {
+
+    @Autowired
+    private  ContactMessageRepository contactMessageRepository;
+
+    @Autowired
+    private ContactMessageMapper contactMessageMapper;
+
+
+    // Create ContactMessage
+
+    @Transactional
+    public void createContactMessage (ContactMessageRequest contactMessageRequest) {
+
+        Optional<ContactMessage> existContactMessage = contactMessageRepository.findByEmail(contactMessageRequest.getEmail());
+        if(!existContactMessage.isEmpty()){
+            throw  new ConflictException("Contact Message Already Exists");
+        }
+        ContactMessage newContactMessage =  contactMessageMapper.contactMessageRequestToContactMessage(contactMessageRequest);
+
+        contactMessageRepository.save(newContactMessage);
+    }
+
+    // get all ContactMessage
+
+    public List<ContactMessageResponse> getAll () {
+        List<ContactMessage> contactMessages = contactMessageRepository.findAll();
+        if(contactMessages.isEmpty()){
+            throw new ResourceNotFoundException("No Contact Messages found!");
+        }
+        List<ContactMessageResponse> contactMessageResponseList = new ArrayList<>();
+        for(ContactMessage contactMessage: contactMessages){
+            ContactMessageResponse contactMessageDTO = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
+            contactMessageResponseList.add(contactMessageDTO);
+        }
+        return contactMessageResponseList;
+    }
+
+    // get all ContactMessage by page
+
+    public Page<ContactMessageResponse> getAllWithPageable (Pageable pageable) {
+
+        Page<ContactMessage> contactMessagePage = contactMessageRepository.findAll(pageable);
+
+        if(contactMessagePage.isEmpty()){
+            throw new ResourceNotFoundException("No Contact Messages found! ");
+        }
+        Page<ContactMessageResponse> contactMessageResponses = contactMessageMapper.contactMessagePageToContactMessageResponse(contactMessagePage);
+        return contactMessageResponses;
+    }
+
+
+    // search ContactMessage by subject
+
+    public List<ContactMessageResponse> getBySubject (String subject) {
+
+        if(subject.isEmpty()){
+            throw new NullPointerException("Subject is empty, please enter a valid Subject.");
+        }
+
+        List<ContactMessage> contactMessageList = contactMessageRepository.getBySubject(subject);
+        if(contactMessageList.isEmpty()){
+            throw new ResourceNotFoundException("No Contact Messages found by subject: "+subject);
+        }
+
+        List<ContactMessageResponse> contactMessageResponses = new ArrayList<>();
+        for(ContactMessage contactMessage: contactMessageList){
+            ContactMessageResponse contactMessageResponse = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
+            contactMessageResponses.add(contactMessageResponse);
+        }
+        return contactMessageResponses;
+    }
+
+
+    // get ContactMessage by email
+
+    public ContactMessageResponse getByEmail (String email) {
+
+        if(email.isEmpty()){
+            throw new NullPointerException("Email is empty, please enter a valid Email.");
+        }
+
+        ContactMessage contactMessage = contactMessageRepository.findByEmail(email)
+                .orElseThrow(()-> new ResourceNotFoundException("No Contact Messages found by email: "+email));
+
+        ContactMessageResponse contactMessageResponse = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
+        return contactMessageResponse;
+    }
+
+
+    // get ContactMessage by Creation Date
+
+
+    public List<ContactMessageResponse> getByDate (Integer startYear, Integer startMonth, Integer startDay, Integer endYear, Integer endMonth, Integer endDay) {
+
+        LocalTime startTime = LocalTime.of(0,0,0);
+        LocalTime endTime = LocalTime.of(23,59,59);
+
+        LocalDate startDate = LocalDate.of(startYear,startMonth,startDay);
+        LocalDate endDate = LocalDate.of(endYear,endMonth,endDay);
+
+        LocalDateTime startLocalDateTime = LocalDateTime.of(startDate, startTime);
+        LocalDateTime endLocalDateTime = LocalDateTime.of(endDate, endTime);
+
+        Timestamp startDateTime = Timestamp.valueOf(startLocalDateTime);
+        Timestamp endDateTime = Timestamp.valueOf(endLocalDateTime);
+
+
+
+
+
+        List<ContactMessage> contactMessageList = contactMessageRepository.getByDate(startDateTime,endDateTime);
+
+        if(contactMessageList.isEmpty()){
+            throw new ResourceNotFoundException("No Contact Messages found between: "+startDate+" and "+endDate);
+        }
+        List<ContactMessageResponse> contactMessageResponses = new ArrayList<>();
+        for(ContactMessage contactMessage: contactMessageList){
+            ContactMessageResponse contactMessageResponse = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
+            contactMessageResponses.add(contactMessageResponse);
+        }
+        return contactMessageResponses;
+    }
+
+//    // get ContactMessage by Creation Time
+//
+//    public List<ContactMessageResponse> getByTime (String startTime, String endTime) {
+//        if(subject.isEmpty()){
+//            throw new NullPointerException("Subject is empty, please enter a valid Subject.");
+//        }
+//
+//        List<ContactMessage> contactMessageList = contactMessageRepository.getBySubject(subject);
+//        if(contactMessageList.isEmpty()){
+//            throw new ResourceNotFoundException("No Contact Messages found by subject: "+subject);
+//        }
+//
+//        List<ContactMessageResponse> contactMessageResponses = new ArrayList<>();
+//        for(ContactMessage contactMessage: contactMessageList){
+//            ContactMessageResponse contactMessageResponse = contactMessageMapper.contactMessageToContactMessageResponse(contactMessage);
+//            contactMessageResponses.add(contactMessageResponse);
+//        }
+//        return contactMessageResponses;
+//    }
+
+
+    // delete by ID (path)
+
+    @Transactional
+    public void deleteByPath (Long id) {
+
+        boolean isExist = contactMessageRepository.existsById(id);
+        if(!isExist){
+            throw new ResourceNotFoundException("No Contact Messages found by id: "+id);
+        }
+        contactMessageRepository.deleteById(id);
+    }
+
+
+    // delete by ID (parameter)
+    @Transactional
+    public void deleteByParameter (Long id) {
+
+        boolean isExist = contactMessageRepository.existsById(id);
+        if(!isExist){
+            throw new ResourceNotFoundException("No Contact Messages found by id: "+id);
+        }
+        contactMessageRepository.deleteById(id);
+    }
+
+    // update a ContactMessage
+    @Transactional
+    public void update (Long id, ContactMessageUpdateRequest contactMessageUpdateRequest) {
+
+        if(id==null){
+            throw new NullPointerException("Id is empty: "+id+" please enter a valid Id.");
+        }
+
+        ContactMessage existContactMessage = contactMessageRepository.findById(id)
+                .orElseThrow(()->new ResourceNotFoundException("No Contact Messages found by id: "+id));
+
+        boolean isEmailExist = contactMessageRepository.existsByEmail(contactMessageUpdateRequest.getEmail());
+
+        if(isEmailExist && !existContactMessage.getEmail().equals(contactMessageUpdateRequest.getEmail())){
+            throw new ConflictException("Contact Message with email:   "+contactMessageUpdateRequest.getEmail()+"  already exists");
+        }
+
+        existContactMessage.setName(contactMessageUpdateRequest.getName());
+        existContactMessage.setMessage(contactMessageUpdateRequest.getMessage());
+        existContactMessage.setSubject(contactMessageUpdateRequest.getSubject());
+        existContactMessage.setEmail(contactMessageUpdateRequest.getEmail());
+        contactMessageRepository.save(existContactMessage);
+
+    }
+
+
+
+}
